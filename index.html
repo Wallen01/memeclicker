@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>迷因互動點擊器</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --red: #ff2638;
+      --glow: 0;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100svh;
+      overflow: hidden;
+      background: #08090c;
+      color: #fff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
+    }
+
+    main {
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      place-items: center;
+      padding: clamp(18px, 3vw, 42px);
+      gap: 18px;
+    }
+
+    .meme-button {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: min(100%, 1100px);
+      height: 100%;
+      min-height: 0;
+      padding: 0;
+      border: 0;
+      border-radius: clamp(14px, 2vw, 28px);
+      background: #121419;
+      overflow: hidden;
+      cursor: pointer;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      box-shadow: 0 22px 80px rgba(0, 0, 0, .52);
+    }
+
+    .meme-button:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+    .meme-button[aria-disabled="true"] { cursor: wait; }
+
+    #meme {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      pointer-events: none;
+      -webkit-user-drag: none;
+    }
+
+    .red-light {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: var(--glow);
+      mix-blend-mode: screen;
+      filter: saturate(1.65) brightness(1.28);
+      background:
+        repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 20, 38, .98) 0 3deg, transparent 3deg 13deg),
+        radial-gradient(circle at 50% 50%, rgba(255, 45, 58, 1) 0%, rgba(255, 12, 30, .72) 35%, rgba(255, 0, 20, .2) 68%, transparent 86%);
+      transition: opacity 30ms linear;
+    }
+
+    .release-effects {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 30ms linear;
+      mix-blend-mode: screen;
+    }
+    .meme-button.releasing .release-effects { opacity: var(--release-intensity, 1); }
+
+    .eye-glow {
+      position: absolute;
+      left: 60.2%;
+      top: 19.2%;
+      width: 3.3%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: #fff1f2;
+      box-shadow: 0 0 5px 3px #ff2638, 0 0 18px 8px rgba(255, 0, 26, .94), 0 0 44px 15px rgba(255, 0, 20, .55);
+      transform: rotate(-22deg);
+    }
+
+    .mouth-beam {
+      position: absolute;
+      left: 66.4%;
+      top: 22.4%;
+      width: 48%;
+      height: 14%;
+      transform: rotate(-16deg);
+      transform-origin: left center;
+      clip-path: polygon(0 46%, 100% 0, 100% 100%, 0 54%);
+      background: linear-gradient(90deg, rgba(255, 235, 238, .98), rgba(255, 45, 60, .93) 20%, rgba(255, 0, 28, .35) 68%, transparent);
+      filter: drop-shadow(0 0 5px #fff4f5) drop-shadow(0 0 14px #ff2638) drop-shadow(0 0 27px rgba(255, 0, 24, .9));
+    }
+
+    .panel {
+      width: min(100%, 760px);
+      text-align: center;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .count-label {
+      display: block;
+      color: #aeb1ba;
+      font-size: clamp(.72rem, 1.4vw, .88rem);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    #counter {
+      margin: 3px 0 12px;
+      font-size: clamp(2.1rem, 7vw, 4.4rem);
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      letter-spacing: -.06em;
+    }
+
+    .meter {
+      height: 9px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: #24262c;
+      opacity: 0;
+      transition: opacity 160ms ease;
+    }
+    .meter.visible { opacity: 1; }
+    #progress {
+      width: 100%;
+      height: 100%;
+      transform-origin: left center;
+      background: linear-gradient(90deg, #c40e22, #ff4050 70%, #ff8b92);
+      box-shadow: 0 0 16px rgba(255, 38, 56, .85);
+    }
+
+    #status {
+      min-height: 1.35em;
+      margin: 8px 0 0;
+      color: #e4e5e9;
+      font-size: clamp(.85rem, 1.8vw, 1.05rem);
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-height: 560px) {
+      main { padding: 12px 18px; gap: 10px; }
+      .panel { display: grid; grid-template-columns: auto 1fr; column-gap: 14px; align-items: center; text-align: left; }
+      .count-label { grid-row: 1; }
+      #counter { grid-row: 2; margin: 1px 0; font-size: 2rem; }
+      .meter { grid-column: 2; grid-row: 1; }
+      #status { grid-column: 2; grid-row: 2; margin: 1px 0 0; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <button id="memeButton" class="meme-button" type="button" aria-label="按住迷因圖片蓄力" aria-disabled="false">
+      <img id="meme" src="img1.png" alt="迷因互動圖片" draggable="false" />
+      <span id="redLight" class="red-light" aria-hidden="true"></span>
+      <span class="release-effects" aria-hidden="true"><span class="eye-glow"></span><span class="mouth-beam"></span></span>
+    </button>
+
+    <section class="panel" aria-live="polite">
+      <span class="count-label">歷史總點擊數</span>
+      <div id="counter">0</div>
+      <div id="meter" class="meter" aria-hidden="true"><div id="progress"></div></div>
+      <p id="status">準備好了嗎？按住圖片蓄力。</p>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const assets = { idle: 'img1.png', press: 'img2.png', holding: 'img3.png', release: 'img4.png' };
+      const storageKey = 'meme-clicker-total-clicks';
+      const button = document.querySelector('#memeButton');
+      const image = document.querySelector('#meme');
+      const redLight = document.querySelector('#redLight');
+      const counter = document.querySelector('#counter');
+      const meter = document.querySelector('#meter');
+      const progress = document.querySelector('#progress');
+      const status = document.querySelector('#status');
+
+      let total = Number.parseInt(localStorage.getItem(storageKey), 10) || 0;
+      let phase = 'idle';
+      let activePointer = null;
+      let holdStartedAt = 0;
+      let heldFor = 0;
+      let frame = 0;
+      let pressDelay = 0;
+
+      Object.values(assets).forEach((src) => { const preload = new Image(); preload.src = src; });
+      renderCount();
+
+      function renderCount() { counter.textContent = total.toLocaleString('zh-Hant'); }
+      function setImage(name) { image.src = assets[name]; }
+      function setGlow(value) { redLight.style.setProperty('--glow', String(Math.max(0, Math.min(1, value)))); }
+      function setReleaseIntensity(value) { button.style.setProperty('--release-intensity', String(Math.max(0, Math.min(1, value)))); }
+      function format(seconds) { return `${seconds.toFixed(2)} 秒`; }
+      function cancelFrame() { if (frame) cancelAnimationFrame(frame); frame = 0; }
+
+      function resetIdle() {
+        cancelFrame();
+        clearTimeout(pressDelay);
+        phase = 'idle';
+        activePointer = null;
+        heldFor = 0;
+        setImage('idle');
+        setGlow(0);
+        setReleaseIntensity(0);
+        button.classList.remove('releasing');
+        meter.classList.remove('visible');
+        progress.style.transform = 'scaleX(1)';
+        status.textContent = '準備好了嗎？按住圖片蓄力。';
+        button.setAttribute('aria-disabled', 'false');
+      }
+
+      function updateHolding() {
+        if (phase !== 'holding') return;
+        heldFor = performance.now() - holdStartedAt;
+        setGlow(1 - Math.exp(-heldFor / 700));
+        status.textContent = `蓄力中 · ${format(heldFor / 1000)}`;
+        frame = requestAnimationFrame(updateHolding);
+      }
+
+      function beginHolding() {
+        if (phase !== 'pressing') return;
+        phase = 'holding';
+        holdStartedAt = performance.now();
+        setImage('holding');
+        updateHolding();
+      }
+
+      function beginPress(event) {
+        if (phase !== 'idle' || (event.pointerType === 'mouse' && event.button !== 0)) return;
+        event.preventDefault();
+        phase = 'pressing';
+        activePointer = event.pointerId;
+        holdStartedAt = 0;
+        total += 1;
+        localStorage.setItem(storageKey, String(total));
+        renderCount();
+        setImage('press');
+        setGlow(0);
+        status.textContent = '觸發！';
+        button.setPointerCapture?.(event.pointerId);
+        pressDelay = window.setTimeout(beginHolding, 50);
+      }
+
+      function beginCooldown() {
+        const startedAt = performance.now();
+        const chargeDuration = heldFor;
+        const duration = chargeDuration * 0.8;
+        const peakGlow = 1 - Math.exp(-chargeDuration / 700);
+        phase = 'cooldown';
+        setImage('release');
+        setGlow(0);
+        button.classList.add('releasing');
+        setReleaseIntensity(peakGlow);
+        meter.classList.add('visible');
+        button.setAttribute('aria-disabled', 'true');
+
+        if (duration <= 0) {
+          meter.classList.remove('visible');
+          status.textContent = '釋放！';
+          pressDelay = window.setTimeout(resetIdle, 50);
+          return;
+        }
+
+        const tick = (now) => {
+          const remaining = Math.max(0, duration - (now - startedAt));
+          const ratio = remaining / duration;
+          progress.style.transform = `scaleX(${ratio})`;
+          setReleaseIntensity(peakGlow * ratio);
+          status.textContent = `冷卻中 · ${format(remaining / 1000)}`;
+          if (remaining > 0) frame = requestAnimationFrame(tick);
+          else resetIdle();
+        };
+        tick(startedAt);
+      }
+
+      function release(event) {
+        if ((phase !== 'pressing' && phase !== 'holding') || event.pointerId !== activePointer) return;
+        clearTimeout(pressDelay);
+        cancelFrame();
+        heldFor = phase === 'holding' ? Math.max(0, performance.now() - holdStartedAt) : 0;
+        try { button.releasePointerCapture?.(event.pointerId); } catch (_) { /* capture already released */ }
+        beginCooldown();
+      }
+
+      button.addEventListener('pointerdown', beginPress);
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointercancel', release);
+      button.addEventListener('contextmenu', (event) => event.preventDefault());
+      window.addEventListener('blur', () => {
+        if (phase === 'pressing' || phase === 'holding') {
+          clearTimeout(pressDelay);
+          cancelFrame();
+          heldFor = phase === 'holding' ? Math.max(0, performance.now() - holdStartedAt) : 0;
+          beginCooldown();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
