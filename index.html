@@ -16,7 +16,9 @@
     body {
       margin: 0;
       min-height: 100svh;
-      overflow: hidden;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: #08090c;
       color: #fff;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans TC", sans-serif;
@@ -24,10 +26,12 @@
 
     main {
       min-height: 100svh;
+      min-height: 100dvh;
       display: grid;
       grid-template-rows: minmax(0, 1fr) auto;
       place-items: center;
       padding: clamp(18px, 3vw, 42px);
+      padding-bottom: max(clamp(18px, 3vw, 42px), env(safe-area-inset-bottom));
       gap: 18px;
     }
 
@@ -36,8 +40,9 @@
       display: grid;
       place-items: center;
       width: min(100%, 1100px);
-      height: 100%;
+      height: auto;
       min-height: 0;
+      aspect-ratio: 736 / 414;
       padding: 0;
       border: 0;
       border-radius: clamp(14px, 2vw, 28px);
@@ -116,7 +121,7 @@
     .panel {
       width: min(100%, 760px);
       text-align: center;
-      padding-bottom: env(safe-area-inset-bottom);
+      padding-bottom: max(4px, env(safe-area-inset-bottom));
     }
 
     .count-label {
